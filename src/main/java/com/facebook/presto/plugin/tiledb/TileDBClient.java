@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import static com.facebook.presto.plugin.tiledb.TileDBErrorCode.TILEDB_CONTEXT_ERROR;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -73,7 +74,7 @@ public class TileDBClient
         }
         catch (TileDBError tileDBError) {
             // Print stacktrace, this produces an error client side saying "internal error"
-            throw new PrestoException(TileDBErrorCode.TILEDB_CONTEXT_ERROR, tileDBError);
+            throw new PrestoException(TILEDB_CONTEXT_ERROR, tileDBError);
         }
 
         // connectorId is an internal prestodb identified
@@ -273,7 +274,7 @@ public class TileDBClient
         }
         catch (TileDBError tileDBError) {
             // Print stacktrace, this produces an error client side saying "internal error"
-            throw new TrinoException(TILEDB_CONTEXT_ERROR, tileDBError);
+            throw new PrestoException(TILEDB_CONTEXT_ERROR, tileDBError);
         }
     }
 
