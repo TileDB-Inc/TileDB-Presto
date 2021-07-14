@@ -235,12 +235,15 @@ public class TileDBSplitManager
                 maxFromNonEmptyDomain = false;
             }
 
-            // If min is less than max, then this range cannot be split, as it returns zero records
+            // If min is greater than max, then this range cannot be split, as it returns zero records
             // This can happen if the query has a selection that puts an upper bound that is less than the
             // low bound, for example, SELECT * FROM ORDERS WHERE orderkey < 0
             if (min > max) {
                 return ranges;
             }
+
+            //it is possible that there are more buckets than the size of the range. In these cases we should use less buckets instead of all.
+            buckets = (int) Math.max(((max - min) % buckets), 1);
 
             long rangeLength = (max - min) / buckets;
             long leftOvers = (max - min) % buckets;
@@ -272,11 +275,10 @@ public class TileDBSplitManager
                     high += 1;
                     leftOvers--;
                 }
-
                 // Only set the range if the values are not equal or if the low
                 // and high are the bounds must also be the same
                 if (low > high) {
-                    LOG.warn("Low > high while setting ranges."); //TODO investigate why
+                    LOG.warn("Low > high while setting ranges.");
                     return ranges;
                 }
                 if (low != high || lowBound == upperBound) {
@@ -291,6 +293,7 @@ public class TileDBSplitManager
         else {
             ranges.add(range);
         }
+
         return ranges;
     }
 }
