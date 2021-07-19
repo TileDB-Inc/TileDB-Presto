@@ -100,6 +100,12 @@ public class TileDBRecordSet
     @Override
     public RecordCursor cursor()
     {
-        return new TileDBRecordCursor(tileDBClient, session, split, columnHandles, array, query);
+        try {
+            return new TileDBRecordCursor(tileDBClient, session, split, columnHandles, array, query);
+        }
+        catch (TileDBError tileDBError) {
+            tileDBError.printStackTrace();
+        }
+        return null;
     }
 }
