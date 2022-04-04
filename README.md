@@ -138,46 +138,6 @@ See [docs/Limitations.md](docs/Limitations.md).
 When a multi-dimensional array is queried in Presto, the dimensions are converted
 to table columns for the result set. TileDB array attributes attributes are also returned as columns.
 
-### Dense Arrays
-
-Consider the following example 2D `4x2` dense array with `dim1` and `dim2`
-as the dimensions and a single attribute `a`:
-
-```
-+-------+-------+
-|       |       |
-|  a:1  |  a:2  |
-|       |       |
-+---------------+
-|       |       |
-|  a:3  |  a:4  |
-|       |       |
-+---------------+
-|       |       |
-|  a:5  |  a:6  |
-|       |       |
-+---------------+
-|       |       |
-|  a:7  |  a:8  |
-|       |       |
-+-------+-------+
-````
-
-When queried via Presto the results are mapped to the following table:
-
-```
- dim1 | dim2 | a
-------+------+---
-    1 |    1 | 1
-    1 |    2 | 2
-    2 |    1 | 3
-    2 |    2 | 4
-    3 |    1 | 5
-    3 |    2 | 6
-    4 |    1 | 7
-    4 |    2 | 8
-```
-
 ### Sparse Arrays
 
 A sparse array is materialized similarly to dense arrays. The following example
