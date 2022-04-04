@@ -1,6 +1,7 @@
 name: TileDB-Presto
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - '*'
