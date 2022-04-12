@@ -115,6 +115,11 @@ public class TestTileDBQueries
         }
     }
 
+    private static QueryRunner createQueryRunner() throws Exception
+    {
+        return createTileDBQueryRunner();
+    }
+
     @AfterClass(alwaysRun = true)
     public final void destroy() throws TileDBError
     {
@@ -124,11 +129,6 @@ public class TestTileDBQueries
         if (Files.exists(Paths.get(sparseURI))) {
             TileDBObject.remove(ctx, sparseURI);
         }
-    }
-
-    private static QueryRunner createQueryRunner() throws Exception
-    {
-        return createTileDBQueryRunner();
     }
 
     @Test
@@ -257,7 +257,7 @@ public class TestTileDBQueries
     @Test
     public void testCreate1DVectorTinyInt()
     {
-        String arrayName = "test_create_tinyint";
+        String arrayName = "test_create_table_tinyint";
         // Tinyint
         dropArray(arrayName);
         create1DVectorTinyIntDimension(arrayName);
@@ -459,7 +459,6 @@ public class TestTileDBQueries
 
         MaterializedResult desc = computeActual(format("DESC %s", arrayName)).toTestTypes();
 
-        /* TODO: Verify that changing from timestamp(3) to timestamp is correct */
         assertEquals(desc,
                 MaterializedResult.resultBuilder(getQueryRunner().getDefaultSession(), VARCHAR, VARCHAR, VARCHAR, VARCHAR)
                         .row("x", "timestamp", "", "Dimension")
@@ -540,7 +539,6 @@ public class TestTileDBQueries
         createYearArray(arrayName);
         MaterializedResult desc = computeActual(format("DESC %s", arrayName)).toTestTypes();
 
-        /* TODO: Verify that changing from timestamp(3) to timestamp is correct */
         assertEquals(desc,
                 MaterializedResult.resultBuilder(getQueryRunner().getDefaultSession(), VARCHAR, VARCHAR, VARCHAR, VARCHAR)
                         .row("d1", "integer", "", "Dimension")
@@ -562,7 +560,7 @@ public class TestTileDBQueries
     public void testCreate1DVectorBigInt()
     {
         // BigInt
-        String arrayName = "test_create_bigint";
+        String arrayName = "test_create_table_bigint";
         dropArray(arrayName);
         create1DVector(arrayName);
 
@@ -615,19 +613,6 @@ public class TestTileDBQueries
         getQueryRunner().execute(insertSql);
 
         String selectSql = format("SELECT * FROM %s ORDER BY x ASC", arrayName);
-
-//        try {
-//            Array arr = new Array(new Context(), arrayName);
-//            Query q = new Query(arr, TILEDB_READ);
-//            q.setBuffer("x", new NativeArray(ctx, 1000, Datatype.TILEDB_FLOAT32));
-//            q.setBuffer("a1", new NativeArray(ctx, 1000, Datatype.TILEDB_INT32));
-//            q.submit();
-//            System.out.println(q);
-//        }
-//        catch (Exception e) {
-//            System.out.println();
-//        }
-
         MaterializedResult selectResult = computeActual(selectSql);
         assertEquals(selectResult, MaterializedResult.resultBuilder(getQueryRunner().getDefaultSession(), REAL, INTEGER)
                 .row((float) 0.0, 10)
@@ -724,7 +709,8 @@ public class TestTileDBQueries
     public void testCreateTableEncrypted() throws Exception
     {
         // Integer
-        String arrayName = "test_create_encrypted";
+        String arrayName = "test_create_table_encrypted";
+        dropArray(arrayName);
         String encryptionKey = "0123456789abcdeF0123456789abcdeF";
 
         create1DVectorStringEncrypted(arrayName, encryptionKey);
@@ -767,7 +753,7 @@ public class TestTileDBQueries
     public void testTimeTraveling() throws Exception
     {
         // BigInt
-        String arrayName = "test_create_bigint";
+        String arrayName = "test_time_traveling";
         dropArray(arrayName);
         create1DVector(arrayName);
 
@@ -859,7 +845,7 @@ public class TestTileDBQueries
     public void testTimeTravelingEncrypted() throws Exception
     {
         // BigInt
-        String arrayName = "test_create_bigint";
+        String arrayName = "test_time_traveling_encrypted";
         String encryptionKey = "0123456789abcdeF0123456789abcdeF";
         create1DVectorEncrypted(arrayName, encryptionKey);
 
@@ -965,6 +951,7 @@ public class TestTileDBQueries
     public void testInsert()
     {
         String arrayName = "test_insert";
+        dropArray(arrayName);
         create1DVector(arrayName);
 
         String insertSql = format("INSERT INTO %s (x, a1) VALUES " +
@@ -986,6 +973,7 @@ public class TestTileDBQueries
     public void testDimensionSlice()
     {
         String arrayName = "test_dim_slice";
+        dropArray(arrayName);
         create1DVector(arrayName);
 
         String insertSql = format("INSERT INTO %s (x, a1) VALUES " +
@@ -1486,11 +1474,11 @@ public class TestTileDBQueries
     }
 
     @Test
-    public void testDenseWriteReadNullable()
+    public void testWriteReadNullable()
     {
-        String arrayName = "test_dense_write_read";
+        String arrayName = "test_write_read";
         dropArray(arrayName);
-        create1DVectorDense(arrayName);
+        create1DVectorNullable(arrayName);
 
         String insertSql = format("INSERT INTO %s (x, a1) VALUES " +
                 "(1, 10), (2, 13), (3, null), (4, 15), (5, 19), (6, 10), (7, 5), (8, 1), (9, 7) ", arrayName);
@@ -1561,6 +1549,16 @@ public class TestTileDBQueries
         queryRunner.execute(createSql);
     }
 
+    private void create1DVectorNullable(String arrayName)
+    {
+        QueryRunner queryRunner = getQueryRunner();
+        String createSql = format("CREATE TABLE %s(" +
+                "x bigint WITH (dimension=true), " +
+                "a1 integer WITH (nullable=true)" +
+                ") WITH (uri='%s')", arrayName, arrayName);
+        queryRunner.execute(createSql);
+    }
+
     private void create1D2AVector(String arrayName)
     {
         QueryRunner queryRunner = getQueryRunner();
@@ -1579,16 +1577,6 @@ public class TestTileDBQueries
         String createSql = format("CREATE TABLE %s(" +
                 "x bigint WITH (dimension=true) " +
                 ") WITH (uri='%s')", arrayName, arrayName);
-        queryRunner.execute(createSql);
-    }
-
-    private void create1DVectorDense(String arrayName)
-    {
-        QueryRunner queryRunner = getQueryRunner();
-        String createSql = format("CREATE TABLE %s(" +
-                "x integer WITH (dimension=true, lower_bound=1, upper_bound=9, extent=2), " +
-                "a1 integer  WITH (nullable=true)" +
-                ") WITH (uri='%s', type='DENSE')", arrayName, arrayName);
         queryRunner.execute(createSql);
     }
 
