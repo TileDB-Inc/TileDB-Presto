@@ -773,11 +773,11 @@ public class TestTileDBQueries
         getQueryRunner().execute(insertSql);
 
         // Retrieve all fragments and sort them in ascending order
-        String[] dirs = new File(arrayName).list(new FilenameFilter() {
+        String[] dirs = new File(arrayName + "/__fragments").list(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String name)
             {
-                return new File(dir, name).isDirectory() && !name.equals("__meta");
+                return new File(dir, name).isDirectory();
             }
         });
         Arrays.sort(dirs);
@@ -873,11 +873,11 @@ public class TestTileDBQueries
         }
 
         // Retrieve all fragments and sort them in ascending order
-        String[] dirs = new File(arrayName).list(new FilenameFilter() {
+        String[] dirs = new File(arrayName + "/__fragments").list(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String name)
             {
-                return new File(dir, name).isDirectory() && !name.equals("__meta");
+                return new File(dir, name).isDirectory();
             }
         });
         Arrays.sort(dirs);
