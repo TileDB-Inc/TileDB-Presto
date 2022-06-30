@@ -55,10 +55,10 @@ Create table with all options specified:
 
 ```sql
 CREATE TABLE region(
-  regionkey bigint WITH (dimension=true, lower_bound=0L, upper_bound=3000L, extent=50L)
+  regionkey bigint WITH (dimension=true, lower_bound=0, upper_bound=3000, extent=50),
   name varchar,
   comment varchar
-  ) WITH (uri = 's3://bucket/region', type = 'SPARSE', cell_order = 'COL_MAJOR', tile_order = 'ROW_MAJOR', capacity = 10L)
+  ) WITH (uri = 's3://bucket/region', type = 'SPARSE', cell_order = 'COL_MAJOR', tile_order = 'ROW_MAJOR', capacity = 10)
 ```
 
 ## Inserting Data
