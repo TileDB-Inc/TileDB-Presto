@@ -275,6 +275,19 @@ public class TileDBRecordCursor
         for (int i = 0; i < columnHandles.size(); i++) {
             columnIndexLookup.put(columnHandles.get(i).getColumnName(), i);
         }
+
+        try (io.tiledb.java.api.Domain domain = arraySchema.getDomain()) {
+            // If empty we add all dimensions and attributes. This is needed for count queries with a where clause.
+            if (columnIndexLookup.isEmpty()) {
+                for (int i = 0; i < arraySchema.getAttributeNum(); i++) {
+                    columnIndexLookup.put(arraySchema.getAttribute(i).getName(), 0);
+                }
+                for (int i = 0; i < domain.getNDim(); i++) {
+                    columnIndexLookup.put(domain.getDimension(i).getName(), 0);
+                }
+            }
+        }
+
         HashMap<String, Pair<Long, Long>> estimations = new HashMap<>();
         String name;
 
@@ -309,12 +322,6 @@ public class TileDBRecordCursor
         }
 
         try (io.tiledb.java.api.Domain domain = arraySchema.getDomain()) {
-            // If we're empty let's at least select the first dimension
-            // this is needed for count queries
-            if (columnIndexLookup.isEmpty()) {
-                columnIndexLookup.put(domain.getDimension(0).getName(), 0);
-            }
-
             for (int i = 0; i < domain.getNDim(); i++) {
                 try (Dimension dim = domain.getDimension(i)) {
                     name = dim.getName();
@@ -467,7 +474,7 @@ public class TileDBRecordCursor
             HashMap<String, Attribute> attributes = arraySchema.getAttributes();
             Iterator it = attributes.entrySet().iterator();
             QueryCondition finalQueryCondition = null;
-            while (it.hasNext()) {
+            while (it.hasNext()) { ////TODO the code below will never run since TileDB's Query Condition is disabled at the moment.
                 Map.Entry pair = (Map.Entry) it.next();
                 Attribute att = (Attribute) pair.getValue();
                 Pair attBounds = getBoundsForAttribute(split, att);
