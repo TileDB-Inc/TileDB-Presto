@@ -141,7 +141,7 @@ public class TileDBMetadata
 
         String key = getEncryptionKey(session);
         if (key != null) {
-            table = tileDBClient.getTable(session, tableName.getSchemaName(), tableName.getTableName(), EncryptionType.TILEDB_AES_256_GCM, key.getBytes());
+            table = tileDBClient.getTable(session, tableName.getSchemaName(), tableName.getTableName(), EncryptionType.TILEDB_AES_256_GCM, key);
         }
         else {
             table = tileDBClient.getTable(session, tableName.getSchemaName(), tableName.getTableName());
@@ -209,10 +209,10 @@ public class TileDBMetadata
                 Array array;
                 String key = getEncryptionKey(session);
                 if (key == null) {
-                    array = new Array(tileDBClient.buildContext(session), tableHandle.getURI(), TILEDB_READ);
+                    array = new Array(tileDBClient.buildContext(session, null, null), tableHandle.getURI(), TILEDB_READ);
                 }
                 else {
-                    array = new Array(tileDBClient.buildContext(session), tableHandle.getURI(), TILEDB_READ, EncryptionType.TILEDB_AES_256_GCM, key.getBytes());
+                    array = new Array(tileDBClient.buildContext(session, EncryptionType.TILEDB_AES_256_GCM, key), tableHandle.getURI(), TILEDB_READ);
                 }
 
                 HashMap<String, Pair> nonEmptyDomain = array.nonEmptyDomain();
@@ -520,21 +520,26 @@ public class TileDBMetadata
         Map<String, Object> properties = tableMetadata.getProperties();
 
         try {
-            Context localCtx = tileDBClient.buildContext(session);
+            Context localCtx;
+            String key = null;
+            if (properties.containsKey(TileDBTableProperties.EncryptionKey)) {
+                key = (String) properties.get(TileDBTableProperties.EncryptionKey);
+            }
+            if (key != null) {
+                localCtx = tileDBClient.buildContext(session, EncryptionType.TILEDB_AES_256_GCM, key);
+            }
+            else {
+                localCtx = tileDBClient.buildContext(session, null, null);
+            }
 
             // Get URI from table properties
             String uri;
-            String encryptionKey = null;
 
             if (properties.containsKey(TileDBTableProperties.URI)) {
                 uri = (String) properties.get(TileDBTableProperties.URI);
             }
             else {
                 uri = table;
-            }
-
-            if (properties.containsKey(TileDBTableProperties.EncryptionKey)) {
-                encryptionKey = (String) properties.get(TileDBTableProperties.EncryptionKey);
             }
 
             // Create array schema
@@ -636,14 +641,8 @@ public class TileDBMetadata
             arraySchema.check();
             TileDBTable tileDBTable;
 
-            if (encryptionKey != null) {
-                Array.create(uri, arraySchema, EncryptionType.TILEDB_AES_256_GCM, encryptionKey.getBytes());
-                tileDBTable = tileDBClient.addTableFromURI(localCtx, schema, new URI(uri), EncryptionType.TILEDB_AES_256_GCM, encryptionKey.getBytes());
-            }
-            else {
-                Array.create(uri, arraySchema);
-                tileDBTable = tileDBClient.addTableFromURI(localCtx, schema, new URI(uri));
-            }
+            Array.create(uri, arraySchema);
+            tileDBTable = tileDBClient.addTableFromURI(localCtx, schema, new URI(uri));
 
             // Clean up
             domain.close();
