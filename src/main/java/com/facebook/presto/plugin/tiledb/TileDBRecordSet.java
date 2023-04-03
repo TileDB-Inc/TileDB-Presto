@@ -20,6 +20,7 @@ import com.facebook.presto.spi.RecordCursor;
 import com.facebook.presto.spi.RecordSet;
 import com.google.common.collect.ImmutableList;
 import io.tiledb.java.api.Array;
+import io.tiledb.java.api.Context;
 import io.tiledb.java.api.EncryptionType;
 import io.tiledb.java.api.Layout;
 import io.tiledb.java.api.Query;
@@ -47,6 +48,7 @@ public class TileDBRecordSet
     private final TileDBSplit split;
     private Query query;
     private Array array;
+    private Context localCtx;
 
     public TileDBRecordSet(TileDBClient tileDBClient, ConnectorSession session, TileDBSplit split, List<TileDBColumnHandle> columnHandles)
     {
@@ -66,17 +68,18 @@ public class TileDBRecordSet
             String key = getEncryptionKey(session);
             BigInteger timestamp = getTimestamp(session);
 
-            if (key != null && timestamp != null) {
-                array = new Array(tileDBClient.buildContext(session), table.getURI().toString(), TILEDB_READ, EncryptionType.TILEDB_AES_256_GCM, key.getBytes(), timestamp);
-            }
-            else if (key != null) {
-                array = new Array(tileDBClient.buildContext(session), table.getURI().toString(), TILEDB_READ, EncryptionType.TILEDB_AES_256_GCM, key.getBytes());
-            }
-            else if (timestamp != null) {
-                array = new Array(tileDBClient.buildContext(session), table.getURI().toString(), TILEDB_READ, timestamp);
+            if (key != null) {
+                localCtx = tileDBClient.buildContext(session, EncryptionType.TILEDB_AES_256_GCM, key);
             }
             else {
-                array = new Array(tileDBClient.buildContext(session), table.getURI().toString(), TILEDB_READ);
+                localCtx = tileDBClient.buildContext(session, null, null);
+            }
+
+            if (timestamp != null) {
+                array = new Array(localCtx, table.getURI().toString(), TILEDB_READ, timestamp);
+            }
+            else {
+                array = new Array(localCtx, table.getURI().toString(), TILEDB_READ);
             }
             query = new Query(array, TILEDB_READ);
             if (array.getSchema().isSparse()) {
@@ -101,7 +104,7 @@ public class TileDBRecordSet
     public RecordCursor cursor()
     {
         try {
-            return new TileDBRecordCursor(tileDBClient, session, split, columnHandles, array, query);
+            return new TileDBRecordCursor(tileDBClient, session, split, columnHandles, array, query, localCtx);
         }
         catch (TileDBError tileDBError) {
             tileDBError.printStackTrace();
