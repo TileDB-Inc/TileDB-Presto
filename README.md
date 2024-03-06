@@ -1,3 +1,5 @@
+<h2>This repository is currently archived, please get in touch with us at <a href="mailto:help@tiledb.com">help@tiledb.com</a> if you have a use-case to discuss.</h2>
+
 # TileDB Presto Connector
 
 ![TileDB-Presto CI](https://github.com/TileDB-Inc/TileDB-Presto/actions/workflows/github_actions.yml/badge.svg)
